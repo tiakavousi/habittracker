@@ -2,23 +2,20 @@
 A command-line habit tracking application built with Python.
 
 ## Installation
-
 1. Clone the repository:
 ```bash
 git clone https://github.com/yourusername/habit_tracker.git
-   cd habit_tracker
+cd habit_tracker
 ```
-
-2.Create a virtual environment:
+2.Setup:
 ```bash
-python -m venv .venv
+make
 source .venv/bin/activate
 ```
-
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-pip install -e .
+3. Clean up
+```
+deactivate
+make clean
 ```
 
 ## Usage
