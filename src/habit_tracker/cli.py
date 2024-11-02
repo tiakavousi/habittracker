@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List
 from .habit_manager import HabitManager
 from .database import Database
-import analytics
+from . import analytics
 
 
 def create_cli(habit_manager: HabitManager):

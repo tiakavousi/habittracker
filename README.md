@@ -35,4 +35,16 @@ habit-tracker list
 
 # View habit details
 habit-tracker view <habit_id>
+
+# View all stats
+habit-tracker stats all
+
+# View daily stats
+habit-tracker stats periodicity daily
+
+# View specific stats habit
+habit-tracker stats habit <habit_id>
 ```
+
+
+
