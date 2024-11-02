@@ -1,7 +1,9 @@
 import argparse
 from datetime import datetime
+from typing import List
 from .habit_manager import HabitManager
 from .database import Database
+import analytics
 
 
 def create_cli(habit_manager: HabitManager):
@@ -30,7 +32,71 @@ def create_cli(habit_manager: HabitManager):
     view_parser = subparsers.add_parser('view', help='View habit details')
     view_parser.add_argument('habit_id', type=str, help='ID of the habit')
 
+    # Stats commands
+    stats_parser = subparsers.add_parser('stats', help='View habit statistics')
+    stats_subparsers = stats_parser.add_subparsers(dest='stats_command')
+
+    # All habits stats
+    stats_subparsers.add_parser('all', help='View statistics for all habits')
+
+    # Stats by periodicity
+    periodicity_parser = stats_subparsers.add_parser(
+        'periodicity', help='View statistics by periodicity')
+    periodicity_parser.add_argument('period', choices=['daily', 'weekly'])
+
+    # Single habit stats
+    single_parser = stats_subparsers.add_parser(
+        'habit', help='View statistics for a single habit')
+    single_parser.add_argument('habit_id', help='ID of the habit')
+
     return parser
+
+
+def display_habit_stats(stats: dict, habit_name: str):
+    """Helper function to display habit statistics."""
+    print(f"\nStatistics for {habit_name}:")
+    print(f"Total completions: {stats['total_completions']}")
+    print(f"Current streak: {stats['current']}")
+    print(f"Longest streak: {stats['longest']}")
+    print(f"Completion rate: {stats['completion_rate']:.1f}%")
+    print(f"Break count: {stats['break_count']}")
+    if stats['last_completed']:
+        print(f"Last completed: {stats['last_completed']}")
+    print("-" * 30)
+
+
+def handle_stats_command(args, habits: List):
+    """Handle all stats-related commands using functional analytics."""
+    if args.stats_command == 'all':
+        all_stats = analytics.analyze_all_habits(habits)
+        for habit_name, habit_stats in all_stats.items():
+            display_habit_stats(habit_stats, habit_name)
+
+    elif args.stats_command == 'periodicity':
+        period_stats = analytics.get_habits_by_periodicity(habits, args.period)
+        print(f"\nStatistics for {args.period} habits:")
+        for habit_data in period_stats:
+            print(f"\n{habit_data['name']}:")
+            habit_stats = habit_data['stats']
+            print(f"Current streak: {habit_stats['current']}")
+            print(f"Longest streak: {habit_stats['longest']}")
+            print(f"Completion rate: {habit_stats['completion_rate']:.1f}%")
+            print("-" * 30)
+
+    elif args.stats_command == 'habit':
+        habit = next((h for h in habits if h.id == args.habit_id), None)
+        if habit:
+            stats = analytics.analyze_habit(habit)
+            suggestions = analytics.generate_improvement_suggestions(stats)
+
+            display_habit_stats(stats, habit.name)
+
+            if suggestions:
+                print("\nSuggestions for improvement:")
+                for suggestion in suggestions:
+                    print(f"- {suggestion}")
+        else:
+            print("Habit not found")
 
 
 def main():
@@ -58,16 +124,15 @@ def main():
         if args.periodicity:
             habits = habit_manager.get_habits_by_periodicity(args.periodicity)
         else:
-            habits = habit_manager.habits.values()
+            habits = list(habit_manager.habits.values())
 
         for habit in habits:
-            streak = habit_manager.calculate_streak(habit)
-            longest_streak = habit_manager.get_longest_streak(habit)
+            habit_stats = analytics.analyze_habit(habit)
             print(f"ID: {habit.id}")
             print(f"Name: {habit.name}")
             print(f"Periodicity: {habit.periodicity}")
-            print(f"Current streak: {streak}")
-            print(f"Longest streak: {longest_streak}")
+            print(f"Current streak: {habit_stats['current']}")
+            print(f"Longest streak: {habit_stats['longest']}")
             print("-" * 30)
 
     elif args.command == 'view':
@@ -82,6 +147,10 @@ def main():
                 print(completion)
         else:
             print("Habit not found")
+
+    elif args.command == 'stats':
+        habits = list(habit_manager.habits.values())
+        handle_stats_command(args, habits)
 
 
 if __name__ == "__main__":
