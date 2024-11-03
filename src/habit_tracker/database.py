@@ -3,9 +3,22 @@ from datetime import datetime
 from typing import List, Dict, Optional
 
 
+def adapt_datetime(dt):
+    """Convert datetime to string for SQLite storage"""
+    return dt.isoformat()
+
+
+def convert_datetime(s):
+    """Convert string from SQLite to datetime"""
+    return datetime.fromisoformat(s)
+
+
 class Database:
     def __init__(self, db_name: str = "habits.db"):
         self.db_name = db_name
+        # Register adapters for datetime
+        sqlite3.register_adapter(datetime, adapt_datetime)
+        sqlite3.register_converter("timestamp", convert_datetime)
         self.connection = self._create_connection()
         self._create_tables()
 
@@ -13,7 +26,7 @@ class Database:
         """Create a database connection."""
         try:
             conn = sqlite3.connect(self.db_name)
-            conn.row_factory = sqlite3.Row  # This enables column access by name
+            conn.row_factory = sqlite3.Row
             return conn
         except sqlite3.Error as e:
             raise Exception(f"Error connecting to database: {e}")

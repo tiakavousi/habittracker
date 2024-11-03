@@ -1,3 +1,8 @@
+import pytest
+from datetime import datetime, timedelta
+from habit_tracker.habit import Habit
+
+
 def test_habit_creation():
     """Test habit initialization"""
     habit = Habit("Read Books", "daily", "Read for 30 minutes")

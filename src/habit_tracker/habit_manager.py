@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 from .database import Database
 from .habit import Habit
 
+VALID_PERIODICITIES = ['daily', 'weekly']
+
 
 class HabitManager:
     def __init__(self, db: Database):
@@ -32,6 +34,11 @@ class HabitManager:
     def create_habit(self, name: str, periodicity: str, description: str = "") -> Optional[Habit]:
         """Create a new habit and save it to database."""
         try:
+            # Validate periodicity
+            if periodicity not in VALID_PERIODICITIES:
+                raise ValueError(f"Invalid periodicity. Must be one of: {
+                                 ', '.join(VALID_PERIODICITIES)}")
+
             habit = Habit(name, periodicity, description)
             if self.db.save_habit(habit.to_dict()):
                 self.habits[habit.id] = habit
@@ -39,7 +46,7 @@ class HabitManager:
             return None
         except Exception as e:
             print(f"Error creating habit: {e}")
-            return None
+            raise
 
     def complete_habit(self, habit_id: str, completion_time: datetime = None) -> bool:
         """Mark a habit as complete."""
