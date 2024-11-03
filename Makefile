@@ -27,6 +27,7 @@ venv:
 install: venv
 	@echo "Installing dependencies..."
 	@$(VENV_PIP) install --upgrade pip
+	@$(VENV_PIP) install -r requirements.txt
 	@$(VENV_PIP) install -e .
 	@echo "Dependencies installed."
 
@@ -37,7 +38,6 @@ setup:
 	@echo '#!/bin/bash' > $(VENV_DIR)/bin/habit-tracker
 	@echo 'PYTHONPATH=$(SRC_DIR) python -m habit_tracker.cli "$$@"' >> $(VENV_DIR)/bin/habit-tracker
 	@chmod +x $(VENV_DIR)/bin/habit-tracker
-	@echo "Setup complete. Use '' to activate the environment."
 	@echo "Setup complete. Use 'source $(VENV_DIR)/bin/activate' to activate the environment."
 
 run: install
