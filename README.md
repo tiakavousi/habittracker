@@ -1,6 +1,11 @@
 # Habit Tracker
 A command-line habit tracking application built with Python.
 
+## Requirements
+- Python 12.0 or higher
+- pip (Python package installer)
+- SQLite3
+
 ## Installation
 1. Clone the repository:
 ```bash
