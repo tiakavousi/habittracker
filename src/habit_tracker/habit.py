@@ -9,8 +9,7 @@ class Habit:
     def __init__(self, name: str, periodicity: str, description: str = ""):
         if periodicity not in VALID_PERIODICITIES:
             raise ValueError(
-                f"Invalid periodicity. Must be one of: {
-                             ', '.join(VALID_PERIODICITIES)}"
+                f"Invalid periodicity. Must be one of: {', '.join(VALID_PERIODICITIES)}"
             )
 
         self.id = str(uuid.uuid4())
