@@ -1,15 +1,17 @@
-from datetime import datetime
 import uuid
+from datetime import datetime
 from typing import List
 
-VALID_PERIODICITIES = ['daily', 'weekly']
+VALID_PERIODICITIES = ["daily", "weekly"]
 
 
 class Habit:
     def __init__(self, name: str, periodicity: str, description: str = ""):
         if periodicity not in VALID_PERIODICITIES:
-            raise ValueError(f"Invalid periodicity. Must be one of: {
-                             ', '.join(VALID_PERIODICITIES)}")
+            raise ValueError(
+                f"Invalid periodicity. Must be one of: {
+                             ', '.join(VALID_PERIODICITIES)}"
+            )
 
         self.id = str(uuid.uuid4())
         self.name = name
@@ -35,5 +37,5 @@ class Habit:
             "name": self.name,
             "periodicity": self.periodicity,
             "description": self.description,
-            "created_at": self.created_at.isoformat()
+            "created_at": self.created_at.isoformat(),
         }

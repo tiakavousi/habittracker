@@ -1,6 +1,6 @@
 import sqlite3
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import Dict, List
 
 
 def adapt_datetime(dt):
@@ -37,7 +37,8 @@ class Database:
             cursor = self.connection.cursor()
 
             # Create habits table
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS habits (
                     id TEXT PRIMARY KEY,
                     name TEXT UNIQUE NOT NULL,
@@ -45,17 +46,20 @@ class Database:
                     description TEXT,
                     created_at TIMESTAMP NOT NULL
                 )
-            """)
+            """
+            )
 
             # Create completions table
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS completions (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     habit_id TEXT NOT NULL,
                     completed_at TIMESTAMP NOT NULL,
                     FOREIGN KEY (habit_id) REFERENCES habits (id)
                 )
-            """)
+            """
+            )
 
             self.connection.commit()
         except sqlite3.Error as e:
@@ -65,16 +69,19 @@ class Database:
         """Save a new habit to the database."""
         try:
             cursor = self.connection.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO habits (id, name, periodicity, description, created_at)
                 VALUES (?, ?, ?, ?, ?)
-            """, (
-                habit_data["id"],
-                habit_data["name"],
-                habit_data["periodicity"],
-                habit_data["description"],
-                habit_data["created_at"]
-            ))
+            """,
+                (
+                    habit_data["id"],
+                    habit_data["name"],
+                    habit_data["periodicity"],
+                    habit_data["description"],
+                    habit_data["created_at"],
+                ),
+            )
             self.connection.commit()
             return True
         except sqlite3.Error as e:
@@ -85,10 +92,13 @@ class Database:
         """Save a habit completion."""
         try:
             cursor = self.connection.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO completions (habit_id, completed_at)
                 VALUES (?, ?)
-            """, (habit_id, completed_at))
+            """,
+                (habit_id, completed_at),
+            )
             self.connection.commit()
             return True
         except sqlite3.Error as e:
@@ -109,12 +119,17 @@ class Database:
         """Retrieve all completions for a specific habit."""
         try:
             cursor = self.connection.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT completed_at FROM completions
                 WHERE habit_id = ?
                 ORDER BY completed_at
-            """, (habit_id,))
-            return [datetime.fromisoformat(row['completed_at']) for row in cursor.fetchall()]
+            """,
+                (habit_id,),
+            )
+            return [
+                datetime.fromisoformat(row["completed_at"]) for row in cursor.fetchall()
+            ]
         except sqlite3.Error as e:
             print(f"Error retrieving completions: {e}")
             return []

@@ -1,5 +1,5 @@
-import pytest
-from datetime import datetime, timedelta
+from datetime import datetime
+
 from habit_tracker.habit import Habit
 
 
@@ -31,6 +31,8 @@ def test_get_completions_sorted(sample_habit, sample_dates):
 def test_to_dict(sample_habit):
     """Test conversion to dictionary"""
     habit_dict = sample_habit.to_dict()
-    assert all(key in habit_dict for key in [
-               'id', 'name', 'periodicity', 'description', 'created_at'])
-    assert habit_dict['name'] == "Read Books"
+    assert all(
+        key in habit_dict
+        for key in ["id", "name", "periodicity", "description", "created_at"]
+    )
+    assert habit_dict["name"] == "Read Books"

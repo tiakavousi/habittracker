@@ -1,5 +1,7 @@
-import pytest
 from datetime import datetime, timedelta
+
+import pytest
+
 from habit_tracker import analytics
 
 
@@ -37,7 +39,8 @@ def test_is_consecutive_daily():
 def test_calculate_streaks(consecutive_dates):
     """Test streak calculation"""
     result = analytics.calculate_streaks(
-        consecutive_dates, analytics.is_consecutive_daily)
+        consecutive_dates, analytics.is_consecutive_daily
+    )
     assert result["current"] == 5
     assert result["longest"] == 5
 
@@ -70,7 +73,7 @@ def test_generate_improvement_suggestions():
         "current": 1,
         "longest": 5,
         "total_completions": 10,
-        "break_count": 5
+        "break_count": 5,
     }
     suggestions = analytics.generate_improvement_suggestions(stats)
     assert isinstance(suggestions, list)

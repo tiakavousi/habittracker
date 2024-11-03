@@ -1,9 +1,10 @@
+from datetime import datetime
 from typing import Dict, List, Optional
-from datetime import datetime, timedelta
+
 from .database import Database
 from .habit import Habit
 
-VALID_PERIODICITIES = ['daily', 'weekly']
+VALID_PERIODICITIES = ["daily", "weekly"]
 
 
 class HabitManager:
@@ -19,7 +20,7 @@ class HabitManager:
             habit = Habit(
                 name=habit_data["name"],
                 periodicity=habit_data["periodicity"],
-                description=habit_data["description"]
+                description=habit_data["description"],
             )
             habit.id = habit_data["id"]
             habit.created_at = datetime.fromisoformat(habit_data["created_at"])
@@ -31,13 +32,17 @@ class HabitManager:
 
             self.habits[habit.id] = habit
 
-    def create_habit(self, name: str, periodicity: str, description: str = "") -> Optional[Habit]:
+    def create_habit(
+        self, name: str, periodicity: str, description: str = ""
+    ) -> Optional[Habit]:
         """Create a new habit and save it to database."""
         try:
             # Validate periodicity
             if periodicity not in VALID_PERIODICITIES:
-                raise ValueError(f"Invalid periodicity. Must be one of: {
-                                 ', '.join(VALID_PERIODICITIES)}")
+                raise ValueError(
+                    f"Invalid periodicity. Must be one of: {
+                        ', '.join(VALID_PERIODICITIES)}"
+                )
 
             habit = Habit(name, periodicity, description)
             if self.db.save_habit(habit.to_dict()):
@@ -68,7 +73,9 @@ class HabitManager:
 
     def get_habits_by_periodicity(self, periodicity: str) -> List[Habit]:
         """Get all habits with specified periodicity."""
-        return [habit for habit in self.habits.values() if habit.periodicity == periodicity]
+        return [
+            habit for habit in self.habits.values() if habit.periodicity == periodicity
+        ]
 
     def calculate_streak(self, habit: Habit) -> int:
         """Calculate current streak for a habit."""

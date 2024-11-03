@@ -1,12 +1,13 @@
-import pytest
 from datetime import datetime, timedelta
-from habit_tracker.habit_manager import HabitManager, VALID_PERIODICITIES
+
+import pytest
+
+from habit_tracker.habit_manager import VALID_PERIODICITIES
 
 
 def test_create_habit(habit_manager):
     """Test habit creation through manager"""
-    habit = habit_manager.create_habit(
-        "Test Habit", "daily", "Test description")
+    habit = habit_manager.create_habit("Test Habit", "daily", "Test description")
     assert habit is not None
     assert habit.name == "Test Habit"
 
@@ -50,10 +51,7 @@ def test_get_longest_streak(habit_manager):
     base_date = datetime.now()
 
     # Add completions for three consecutive days
-    completion_times = [
-        base_date - timedelta(days=i)
-        for i in range(3)
-    ]
+    completion_times = [base_date - timedelta(days=i) for i in range(3)]
 
     for completion_time in completion_times:
         habit_manager.complete_habit(habit.id, completion_time)
@@ -87,9 +85,9 @@ def test_streak_break(habit_manager):
 
     # Add completions with a break in between
     completion_times = [
-        base_date,                    # Today
+        base_date,  # Today
         base_date - timedelta(days=1),  # Yesterday
-        base_date - timedelta(days=3)   # Break
+        base_date - timedelta(days=3),  # Break
     ]
 
     for completion_time in completion_times:
@@ -104,10 +102,7 @@ def test_weekly_habit_streak(habit_manager):
     base_date = datetime.now()
 
     # Add completions for three consecutive weeks
-    completion_times = [
-        base_date - timedelta(days=i*7)
-        for i in range(3)
-    ]
+    completion_times = [base_date - timedelta(days=i * 7) for i in range(3)]
 
     for completion_time in completion_times:
         habit_manager.complete_habit(habit.id, completion_time)

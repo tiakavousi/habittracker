@@ -1,6 +1,4 @@
-import pytest
 from datetime import datetime
-from habit_tracker.database import Database
 
 
 def test_database_creation(test_db):
