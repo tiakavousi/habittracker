@@ -1,5 +1,6 @@
 import argparse
 from typing import List
+from datetime import datetime
 
 from . import analytics
 from .database import Database
@@ -17,6 +18,12 @@ def create_cli(habit_manager: HabitManager):
         "periodicity", choices=["daily", "weekly"], help="Habit periodicity"
     )
     create_parser.add_argument("--description", type=str, help="Habit description")
+    create_parser.add_argument(
+        "--created_at",
+        type=str,
+        help="Creation date (YYYY-MM-DD format)",
+        default=None
+    )
 
     # Complete habit command
     complete_parser = subparsers.add_parser("complete", help="Complete a habit")
@@ -101,6 +108,31 @@ def handle_stats_command(args, habits: List):
             print("Habit not found")
 
 
+def handle_create_command(args: argparse.Namespace, habit_manager: HabitManager) -> None:
+    """Handle habit creation command."""
+    try:
+        created_at = None
+        if args.created_at:
+            try:
+                created_at = datetime.fromisoformat(args.created_at)
+            except ValueError:
+                print("Error: Invalid date format. Use YYYY-MM-DD")
+                return
+
+        habit = habit_manager.create_habit(
+            args.name,
+            args.periodicity,
+            args.description or "",
+            created_at=created_at
+        )
+        if habit:
+            print(f"Created habit: {habit.name} (ID: {habit.id})")
+        else:
+            print("Failed to create habit")
+    except ValueError as e:
+        print(f"Error: {e}")
+
+
 def main():
     db = Database()
     habit_manager = HabitManager(db)
@@ -109,13 +141,7 @@ def main():
     args = parser.parse_args()
 
     if args.command == "create":
-        habit = habit_manager.create_habit(
-            args.name, args.periodicity, args.description or ""
-        )
-        if habit:
-            print(f"Created habit: {habit.name} (ID: {habit.id})")
-        else:
-            print("Failed to create habit")
+        handle_create_command(args, habit_manager)
 
     elif args.command == "complete":
         if habit_manager.complete_habit(args.habit_id):

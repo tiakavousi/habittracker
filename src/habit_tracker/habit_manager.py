@@ -33,7 +33,11 @@ class HabitManager:
             self.habits[habit.id] = habit
 
     def create_habit(
-        self, name: str, periodicity: str, description: str = ""
+        self,
+        name: str,
+        periodicity: str,
+        description: str = "",
+        created_at: Optional[datetime] = None
     ) -> Optional[Habit]:
         """Create a new habit and save it to database."""
         try:
@@ -43,8 +47,7 @@ class HabitManager:
                     f"Invalid periodicity. Must be one of: {
                         ', '.join(VALID_PERIODICITIES)}"
                 )
-
-            habit = Habit(name, periodicity, description)
+            habit = Habit(name, periodicity, description, created_at)
             if self.db.save_habit(habit.to_dict()):
                 self.habits[habit.id] = habit
                 return habit
