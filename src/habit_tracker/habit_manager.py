@@ -33,18 +33,22 @@ class HabitManager:
             self.habits[habit.id] = habit
 
     def create_habit(
-        self, name: str, periodicity: str, description: str = ""
+        self,
+        name: str,
+        periodicity: str,
+        description: str = "",
+        created_at: Optional[datetime] = None
     ) -> Optional[Habit]:
         """Create a new habit and save it to database."""
         try:
             # Validate periodicity
             if periodicity not in VALID_PERIODICITIES:
                 raise ValueError(
-                    f"Invalid periodicity. Must be one of: {
-                        ', '.join(VALID_PERIODICITIES)}"
+                    f"Invalid periodicity. Must be one of: {', '.join(VALID_PERIODICITIES)}"
                 )
 
-            habit = Habit(name, periodicity, description)
+            habit = Habit(name, periodicity, description, created_at)
+
             if self.db.save_habit(habit.to_dict()):
                 self.habits[habit.id] = habit
                 return habit
@@ -76,55 +80,3 @@ class HabitManager:
         return [
             habit for habit in self.habits.values() if habit.periodicity == periodicity
         ]
-
-    def calculate_streak(self, habit: Habit) -> int:
-        """Calculate current streak for a habit."""
-        completions = sorted(habit.get_completions(), reverse=True)
-        if not completions:
-            return 0
-
-        streak = 1
-        last_completion = completions[0]
-
-        for completion in completions[1:]:
-            if habit.periodicity == "daily":
-                if (last_completion.date() - completion.date()).days == 1:
-                    streak += 1
-                    last_completion = completion
-                else:
-                    break
-            elif habit.periodicity == "weekly":
-                if 1 <= (last_completion - completion).days <= 7:
-                    streak += 1
-                    last_completion = completion
-                else:
-                    break
-
-        return streak
-
-    def get_longest_streak(self, habit: Habit) -> int:
-        """Calculate longest streak for a habit."""
-        completions = sorted(habit.get_completions())
-        if not completions:
-            return 0
-
-        max_streak = current_streak = 1
-        last_completion = completions[0]
-
-        for completion in completions[1:]:
-            if habit.periodicity == "daily":
-                if (completion.date() - last_completion.date()).days == 1:
-                    current_streak += 1
-                    max_streak = max(max_streak, current_streak)
-                else:
-                    current_streak = 1
-                last_completion = completion
-            elif habit.periodicity == "weekly":
-                if 1 <= (completion - last_completion).days <= 7:
-                    current_streak += 1
-                    max_streak = max(max_streak, current_streak)
-                else:
-                    current_streak = 1
-                last_completion = completion
-
-        return max_streak

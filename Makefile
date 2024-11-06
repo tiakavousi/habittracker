@@ -44,6 +44,11 @@ run: install
 	@echo "Running Habit Tracker..."
 	@$(VENV_PYTHON) -m $(PROJECT_NAME).cli
 
+watch:
+	@echo "Watching for changes and restarting the application..."
+	watchmedo auto-restart --directory=$(SRC_DIR) --pattern="*.py" -- $(VENV_PYTHON) -m $(PROJECT_NAME).cli
+
+
 test: install
 	@echo "Running tests..."
 	@PYTHONPATH=$(SRC_DIR) $(VENV_PYTHON) -m pytest tests/

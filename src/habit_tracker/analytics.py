@@ -1,14 +1,41 @@
+"""Habit Analytics Module.
+
+This module provides functionality for analyzing habit completion data and generating 
+insights using functional programming principles.
+
+Key components:
+    - Habit completion analysis
+    - Streak calculations
+    - Improvement suggestions
+    - Time-based analytics
+"""
+
 from datetime import datetime
 from functools import reduce
 from typing import Any, Callable, Dict, List
 
+# Type aliases for clarity
 HabitData = Dict[str, Any]
 Stats = Dict[str, Any]
 
 
-def compose(*functions: List[Callable]) -> Callable:
-    """Compose multiple functions from right to left."""
-    return reduce(lambda f, g: lambda x: f(g(x)), functions)
+# def compose(*functions: List[Callable]) -> Callable:
+#     """Compose multiple functions from right to left.
+    
+#     Args:
+#         *functions: Variable number of callable functions to compose.
+        
+#     Returns:
+#         Callable: A new function that represents the composition of all input functions.
+        
+#     Example:
+#         >>> f = lambda x: x + 1
+#         >>> g = lambda x: x * 2
+#         >>> h = compose(f, g)
+#         >>> h(3)  # First multiplies by 2, then adds 1
+#         7
+#     """
+#     return reduce(lambda f, g: lambda x: f(g(x)), functions)
 
 
 def pipe(data: Any, *functions: List[Callable]) -> Any:
@@ -25,15 +52,20 @@ def is_consecutive_daily(date1: datetime, date2: datetime) -> bool:
     """Check if two dates are consecutive days."""
     return days_between(date1, date2) == 1
 
-
 def is_same_week(date1: datetime, date2: datetime) -> bool:
     """Check if two dates are in the same week."""
-    return date1.strftime("%Y-%W") == date2.strftime("%Y-%W")
-
+    return date1.strftime("%Y-%W") == date2.strftime("%Y-%W")  
 
 def is_consecutive_weekly(date1: datetime, date2: datetime) -> bool:
-    """Check if two dates are in consecutive weeks."""
-    return 1 <= days_between(date1, date2) <= 7
+    # """Check if two dates are in consecutive weeks."""
+    # return 1 <= days_between(date1, date2) <= 7
+     """Check if two dates are in consecutive weeks."""
+     if is_same_week(date1, date2):
+            return False
+    # Check if weeks are adjacent by comparing week numbers
+     week1 = int(date1.strftime("%W"))
+     week2 = int(date2.strftime("%W"))
+     return abs(week1 - week2) == 1
 
 
 def get_completion_dates(habit: Any) -> List[datetime]:
@@ -66,8 +98,23 @@ def group_by_period(
 def calculate_streaks(
     dates: List[datetime], is_consecutive_fn: Callable
 ) -> Dict[str, int]:
-    """Calculate current and longest streaks using provided
-    consecutive check function."""
+    """Calculate current and longest streaks for a set of completion dates.
+    
+    Args:
+        dates: List of datetime objects representing completion dates.
+        is_consecutive_fn: Function that determines if two dates are consecutive
+            according to the habit's periodicity (daily/weekly).
+            
+    Returns:
+        Dict containing:
+            - current: int (length of current streak)
+            - longest: int (length of longest streak)
+            
+    Example:
+        >>> dates = [datetime(2024, 1, 1), datetime(2024, 1, 2)]
+        >>> calculate_streaks(dates, is_consecutive_daily)
+        {'current': 2, 'longest': 2}
+    """
     groups = group_by_period(dates, is_consecutive_fn)
 
     if not groups:
@@ -103,7 +150,6 @@ def calculate_completion_rate(
 
     return (unique_periods / total_periods * 100) if total_periods > 0 else 0
 
-
 def calculate_breaks(dates: List[datetime], is_consecutive_fn: Callable) -> int:
     """Calculate number of breaks in habit completion."""
     if len(dates) < 2:
@@ -114,7 +160,33 @@ def calculate_breaks(dates: List[datetime], is_consecutive_fn: Callable) -> int:
 
 
 def analyze_habit(habit: Any) -> Stats:
-    """Analyze a single habit using functional composition."""
+    """Analyze a single habit and generate comprehensive statistics.
+    
+    Performs analysis on habit completion data to generate insights including
+    streaks, completion rates, and break counts.
+    
+    Args:
+        habit: A habit object containing completion data and metadata.
+            Expected to have attributes:
+            - periodicity: str ("daily" or "weekly")
+            - created_at: datetime
+            - name: str
+            
+    Returns:
+        Dict[str, Any]: Statistics dictionary containing:
+            - total_completions: int
+            - current: int (current streak)
+            - longest: int (longest streak)
+            - completion_rate: float (percentage)
+            - break_count: int
+            - last_completed: datetime or None
+            
+    Example:
+        >>> habit = Habit(name="Exercise", periodicity="daily")
+        >>> stats = analyze_habit(habit)
+        >>> print(stats['current'])  # Current streak
+        3
+    """
     dates = get_completion_dates(habit)
     is_consecutive = (
         is_consecutive_daily if habit.periodicity == "daily" else is_consecutive_weekly
@@ -152,7 +224,28 @@ def get_habits_by_periodicity(habits: List[Any], periodicity: str) -> List[Dict]
 
 
 def generate_improvement_suggestions(stats: Stats) -> List[str]:
-    """Generate improvement suggestions based on stats."""
+    """Generate personalized improvement suggestions based on habit statistics.
+    
+    Analyzes habit statistics and returns relevant suggestions for improvement
+    based on predefined rules.
+    
+    Args:
+        stats: Dictionary containing habit statistics with keys:
+            - completion_rate: float
+            - current: int (current streak)
+            - longest: int (longest streak)
+            - break_count: int
+            - total_completions: int
+            
+    Returns:
+        List[str]: List of improvement suggestions based on the statistics.
+        
+    Example:
+        >>> stats = {'completion_rate': 25, 'current': 1, 'longest': 5}
+        >>> suggestions = generate_improvement_suggestions(stats)
+        >>> print(suggestions[0])
+        'Consider making this habit easier or breaking it into smaller steps'
+    """
     suggestion_rules = [
         # Rule format: (condition_fn, message_fn)
         (
@@ -167,9 +260,9 @@ def generate_improvement_suggestions(stats: Stats) -> List[str]:
         ),
         (
             lambda s: s["current"] < s["longest"] / 2,
-            lambda s: f"You've had a longer streak ({
-                s['longest']} days)! Try to beat your record",
+            lambda s: f"You've had a longer streak ({s['longest']} days)! Try to beat your record",
         ),
+
         (
             lambda s: s["break_count"] > s["total_completions"] / 3,
             lambda _: "Consider setting reminders to maintain consistency",
