@@ -59,13 +59,37 @@ def is_same_week(date1: datetime, date2: datetime) -> bool:
 def is_consecutive_weekly(date1: datetime, date2: datetime) -> bool:
     # """Check if two dates are in consecutive weeks."""
     # return 1 <= days_between(date1, date2) <= 7
-     """Check if two dates are in consecutive weeks."""
-     if is_same_week(date1, date2):
-            return False
-    # Check if weeks are adjacent by comparing week numbers
-     week1 = int(date1.strftime("%W"))
-     week2 = int(date2.strftime("%W"))
-     return abs(week1 - week2) == 1
+    """Check if two dates are in consecutive weeks."""
+    def get_week_year(dt: datetime) -> tuple:
+        """Get ISO week and year for proper week boundary handling."""
+        # Using ISO calendar to handle week boundaries correctly
+        return dt.isocalendar()[:2]  # (year, week)
+
+    week1_year, week1 = get_week_year(date1)
+    week2_year, week2 = get_week_year(date2)
+
+    # Handle same week completions
+    if week1_year == week2_year and week1 == week2:
+        return True
+    
+    # Handle year boundary
+    if week1_year != week2_year:
+        # Check last week of one year and first week of next year
+        if abs(week1_year - week2_year) == 1:
+            max_week = datetime(week1_year, 12, 28).isocalendar()[1]
+            if (week1 == max_week and week2 == 1) or (week2 == max_week and week1 == 1):
+                return True
+        return False
+    
+    # Regular case: check if weeks are consecutive
+    return abs(week1 - week2) == 1
+
+    # if is_same_week(date1, date2):
+    #     return False
+    # # Check if weeks are adjacent by comparing week numbers
+    # week1 = int(date1.strftime("%W"))
+    # week2 = int(date2.strftime("%W"))
+    # return abs(week1 - week2) == 1
 
 
 def get_completion_dates(habit: Any) -> List[datetime]:
@@ -98,30 +122,51 @@ def group_by_period(
 def calculate_streaks(
     dates: List[datetime], is_consecutive_fn: Callable
 ) -> Dict[str, int]:
-    """Calculate current and longest streaks for a set of completion dates.
-    
-    Args:
-        dates: List of datetime objects representing completion dates.
-        is_consecutive_fn: Function that determines if two dates are consecutive
-            according to the habit's periodicity (daily/weekly).
-            
-    Returns:
-        Dict containing:
-            - current: int (length of current streak)
-            - longest: int (length of longest streak)
-            
-    Example:
-        >>> dates = [datetime(2024, 1, 1), datetime(2024, 1, 2)]
-        >>> calculate_streaks(dates, is_consecutive_daily)
-        {'current': 2, 'longest': 2}
-    """
-    groups = group_by_period(dates, is_consecutive_fn)
-
-    if not groups:
+    """Calculate current and longest streaks for a set of completion dates."""
+    if not dates:
         return {"current": 0, "longest": 0}
+    
+    # Sort dates in ascending order for longest streak calculation
+    sorted_dates = sorted(dates)
+    longest_streak = current_sequence = 1
+    
+    # Calculate longest streak
+    for i in range(1, len(sorted_dates)):
+        if is_consecutive_fn(sorted_dates[i-1], sorted_dates[i]):
+            current_sequence += 1
+            longest_streak = max(longest_streak, current_sequence)
+        else:
+            current_sequence = 1
+    
+    # Calculate current streak from most recent dates
+    current_streak = 1
+    today = datetime.now()
+    most_recent = max(dates)
+    
+    # Check if the most recent completion is within the valid period
+    if (today.date() - most_recent.date()).days > (1 if "daily" in str(is_consecutive_fn) else 7):
+        current_streak = 0
+    else:
+        reversed_dates = sorted(dates, reverse=True)
+        for i in range(1, len(reversed_dates)):
+            if is_consecutive_fn(reversed_dates[i], reversed_dates[i-1]):
+                current_streak += 1
+            else:
+                break
+    
+    return {
+        "current": current_streak,
+        "longest": longest_streak
+    }
 
-    lengths = list(map(len, groups))
-    return {"current": lengths[-1], "longest": max(lengths)}
+
+    # groups = group_by_period(dates, is_consecutive_fn)
+
+    # if not groups:
+    #     return {"current": 0, "longest": 0}
+
+    # lengths = list(map(len, groups))
+    # return {"current": lengths[-1], "longest": max(lengths)}
 
 
 def calculate_completion_rate(
@@ -132,12 +177,7 @@ def calculate_completion_rate(
         return 0.0
 
     end_date = datetime.now()
-
-    total_periods = (
-        days_between(start_date, end_date) + 1
-        if periodicity == "daily"
-        else ((end_date - start_date).days // 7) + 1
-    )
+    total_periods = 0
 
     unique_periods = len(
         set(
@@ -147,6 +187,11 @@ def calculate_completion_rate(
             )
         )
     )
+
+    if periodicity == "daily":
+        total_periods = (end_date.date() - start_date.date()).days + 1
+    else:  # weekly
+        total_periods = ((end_date.date() - start_date.date()).days // 7) + 1
 
     return (unique_periods / total_periods * 100) if total_periods > 0 else 0
 
@@ -160,48 +205,49 @@ def calculate_breaks(dates: List[datetime], is_consecutive_fn: Callable) -> int:
 
 
 def analyze_habit(habit: Any) -> Stats:
-    """Analyze a single habit and generate comprehensive statistics.
-    
-    Performs analysis on habit completion data to generate insights including
-    streaks, completion rates, and break counts.
-    
-    Args:
-        habit: A habit object containing completion data and metadata.
-            Expected to have attributes:
-            - periodicity: str ("daily" or "weekly")
-            - created_at: datetime
-            - name: str
-            
-    Returns:
-        Dict[str, Any]: Statistics dictionary containing:
-            - total_completions: int
-            - current: int (current streak)
-            - longest: int (longest streak)
-            - completion_rate: float (percentage)
-            - break_count: int
-            - last_completed: datetime or None
-            
-    Example:
-        >>> habit = Habit(name="Exercise", periodicity="daily")
-        >>> stats = analyze_habit(habit)
-        >>> print(stats['current'])  # Current streak
-        3
-    """
+    """Analyze a single habit and generate comprehensive statistics."""
     dates = get_completion_dates(habit)
     is_consecutive = (
-        is_consecutive_daily if habit.periodicity == "daily" else is_consecutive_weekly
+        is_consecutive_daily if habit.periodicity == "daily" 
+        else is_consecutive_weekly
     )
 
+    streak_data = calculate_streaks(dates, is_consecutive)
+    
     return {
         "total_completions": len(dates),
-        **calculate_streaks(dates, is_consecutive),
+        "current": streak_data["current"],
+        "longest": streak_data["longest"],
         "completion_rate": calculate_completion_rate(
             dates, habit.created_at, habit.periodicity
         ),
         "break_count": calculate_breaks(dates, is_consecutive),
         "last_completed": max(dates) if dates else None,
+        "periodicity": habit.periodicity
     }
 
+def is_consecutive_weekly(date1: datetime, date2: datetime) -> bool:
+    """Check if two dates are in consecutive or same weeks."""
+    def get_week_year(dt: datetime) -> tuple:
+        """Get ISO week and year for proper week boundary handling."""
+        return dt.isocalendar()[:2]  # (year, week)
+    
+    week1_year, week1 = get_week_year(date1)
+    week2_year, week2 = get_week_year(date2)
+    
+    # If dates are in same week
+    if week1_year == week2_year and week1 == week2:
+        return True
+    
+    # If dates span year boundary
+    if abs(week1_year - week2_year) == 1:
+        max_week = datetime(min(week1_year, week2_year), 12, 28).isocalendar()[1]
+        if (week1 == max_week and week2 == 1) or (week2 == max_week and week1 == 1):
+            return True
+        return False
+    
+    # Regular case: same year, different weeks
+    return week1_year == week2_year and abs(week1 - week2) == 1
 
 def analyze_habits_by_predicate(habits: List[Any], predicate: Callable) -> List[Dict]:
     """Analyze habits filtered by a predicate function."""
@@ -246,21 +292,21 @@ def generate_improvement_suggestions(stats: Stats) -> List[str]:
         >>> print(suggestions[0])
         'Consider making this habit easier or breaking it into smaller steps'
     """
+
+    period_text = "weeks" if stats.get("periodicity") == "weekly" else "days"
     suggestion_rules = [
         # Rule format: (condition_fn, message_fn)
         (
             lambda s: s["completion_rate"] < 30,
-            lambda _: "Consider making this habit easier or \
-              breaking it into smaller steps",
+            lambda _: "Consider making this habit easier or breaking it into smaller steps",
         ),
         (
             lambda s: s["completion_rate"] < 70,
-            lambda _: "You're making progress! Try setting specific \
-                times for this habit",
+            lambda _: "You're making progress! Try setting specific times for this habit",
         ),
         (
             lambda s: s["current"] < s["longest"] / 2,
-            lambda s: f"You've had a longer streak ({s['longest']} days)! Try to beat your record",
+            lambda s: f"You've had a longer streak ({s['longest']} {period_text})! Try to beat your record",
         ),
 
         (

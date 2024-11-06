@@ -1,0 +1,40 @@
+habits:
+  - name: "Walk the cat"
+    periodicity: "daily"
+    description: "30 minutes"
+    completion_rate: 0.7
+    completion_time_range:
+      start_hour: 7
+      end_hour: 22
+
+  - name: "Read Book"
+    periodicity: "daily"
+    description: "Read 20 pages"
+    completion_rate: 0.7
+    completion_time_range:
+      start_hour: 9
+      end_hour: 23
+
+  - name: "Yoga"
+    periodicity: "weekly"
+    description: "1.5 h yoga"
+    completion_rate: 0.8
+    completion_time_range:
+      start_hour: 10
+      end_hour: 20
+
+  - name: "Meditation"
+    periodicity: "daily"
+    description: "15 minutes mindfulness"
+    completion_rate: 0.7
+    completion_time_range:
+      start_hour: 6
+      end_hour: 10
+
+  - name: "feeding stray cats"
+    periodicity: "weekly"
+    description: "feeding cats in the neighborhood"
+    completion_rate: 0.8
+    completion_time_range:
+      start_hour: 16
+      end_hour: 19

@@ -8,6 +8,7 @@ setup(
     python_requires=">=3.9",
     install_requires=[
         "pytest>=7.4.0",
+        "PyYAML>=6.0.1",
     ],
     extras_require={
         "test": [

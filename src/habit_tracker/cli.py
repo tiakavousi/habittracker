@@ -4,7 +4,7 @@ from datetime import datetime
 from . import analytics
 from .database import Database
 from .habit_manager import HabitManager
-from .init_habits import initialize_default_habits
+from .data_loader import initialize_default_habits
 
 
 
@@ -81,6 +81,12 @@ def handle_stats_command(args, habits: List):
         all_stats = analytics.analyze_all_habits(habits)
         for habit_name, habit_stats in all_stats.items():
             display_habit_stats(habit_stats, habit_name)
+            suggestions = analytics.generate_improvement_suggestions(habit_stats)
+            if suggestions:
+                print("\nSuggestions for improvement:")
+                for suggestion in suggestions:
+                    print(f"- {suggestion}")
+            print("-" * 30)
 
     elif args.stats_command == "periodicity":
         period_stats = analytics.get_habits_by_periodicity(habits, args.period)
@@ -135,19 +141,25 @@ def handle_create_command(args: argparse.Namespace, habit_manager: HabitManager)
 def main():
     db = Database()
     habit_manager = HabitManager(db)
-    parser = create_cli(habit_manager)
-
-    # Check if this is first run (no habits exist)
+    # Initialize default habits if the database is empty
     if not habit_manager.habits:
         print("Initializing default habits...")
-        habit_manager = initialize_default_habits(db)
-        print("\nDefault habits have been created with 4 weeks of sample data:")
-        for habit in habit_manager.habits.values():
-            print(f"\nHabit: {habit.name} ({habit.periodicity})")
-            print(f"Description: {habit.description}")
-            print(f"Completions:")
-            for completion in sorted(habit.get_completions()):
-                print(f"  - {completion}")
+        initialize_default_habits(habit_manager)
+        print("Default habits initialized successfully!")
+
+    parser = create_cli(habit_manager)
+
+    # # Check if this is first run (no habits exist)
+    # if not habit_manager.habits:
+    #     print("Initializing default habits...")
+    #     habit_manager = initialize_default_habits(db)
+    #     print("\nDefault habits have been created with 4 weeks of sample data:")
+    #     for habit in habit_manager.habits.values():
+    #         print(f"\nHabit: {habit.name} ({habit.periodicity})")
+    #         print(f"Description: {habit.description}")
+    #         print(f"Completions:")
+    #         for completion in sorted(habit.get_completions()):
+    #             print(f"  - {completion}")
 
     args = parser.parse_args()
 
