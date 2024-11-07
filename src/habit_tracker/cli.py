@@ -1,12 +1,9 @@
 import argparse
-from typing import List
+from typing import List, Any
 from datetime import datetime
-from . import analytics
 from .database import Database
 from .habit_manager import HabitManager
 from .data_loader import initialize_default_habits
-
-
 
 def create_cli(habit_manager: HabitManager):
     parser = argparse.ArgumentParser(description="Habit Tracker Application")
@@ -63,64 +60,52 @@ def create_cli(habit_manager: HabitManager):
     return parser
 
 
-def display_habit_stats(stats: dict, habit_name: str):
-    """Helper function to display habit statistics."""
-    print(f"\nStatistics for {habit_name}:")
+# Display stats Helper function
+def display_stats(habit_name: str, stats: dict, habit: Any) -> None:
+    """Standardized display format for habit statistics including complete history."""
+    # Performance Metrics Section
+    print(f"\n\n {habit_name}")
+    print("_" * 30)
     print(f"Total completions: {stats['total_completions']}")
-    print(f"Current streak: {stats['current']}")
-    print(f"Longest streak: {stats['longest']}")
     print(f"Completion rate: {stats['completion_rate']:.1f}%")
+    
+    # Streak Analysis
+    print(f"Current streak: {stats['current']} {habit.periodicity}")
+    print(f"Longest streak: {stats['longest']} {habit.periodicity}")
     print(f"Break count: {stats['break_count']}")
-    if stats["last_completed"]:
-        print(f"Last completed: {stats['last_completed']}")
-    print("-" * 30)
+    
+    # Consistency Analysis
+    completion_rate = stats['completion_rate']
+    if completion_rate >= 80:
+        consistency = "Excellent"
+    elif completion_rate >= 60:
+        consistency = "Good"
+    elif completion_rate >= 40:
+        consistency = "Fair"
+    else:
+        consistency = "Needs improvement"
+    print(f"\nConsistency rating: {consistency}")
+    
+    # Improvement Suggestions
+    suggestions = stats.get('suggestions', [])
+    if suggestions:
+        print("\n💡 Suggestions:")
+        for suggestion in suggestions:
+            print(f"• {suggestion}")
 
+    # Complete History Section
+    print("\n📅 Complete History")
+    print("_" * 30)
+    completions = sorted(habit.get_completions(), reverse=True)
+    if completions:
+        print(f"All completions ({len(completions)} total):")
+        for idx, completion in enumerate(completions, 1):
+            print(f"{idx}. {completion.strftime('%Y-%m-%d %H:%M')}")
+    else:
+        print("No completions recorded yet")
+    print("=" * 40)
 
-def handle_stats_command(args, habits: List):
-    """Handle all stats-related commands using functional analytics."""
-    if args.stats_command == "all":
-        all_stats = analytics.analyze_all_habits(habits)
-        for habit_name, habit_stats in all_stats.items():
-            display_habit_stats(habit_stats, habit_name)
-            suggestions = analytics.generate_improvement_suggestions(habit_stats)
-            if suggestions:
-                print("\nSuggestions for improvement:")
-                for suggestion in suggestions:
-                    print(f"- {suggestion}")
-            print("-" * 30)
-
-    elif args.stats_command == "periodicity":
-        period_stats = analytics.get_habits_by_periodicity(habits, args.period)
-        print(f"\nStatistics for {args.period} habits:")
-        for habit_data in period_stats:
-            print(f"\n{habit_data['name']}:")
-            habit_stats = habit_data["stats"]
-            print(f"Current streak: {habit_stats['current']}")
-            print(f"Longest streak: {habit_stats['longest']}")
-            print(f"Completion rate: {habit_stats['completion_rate']:.1f}%")
-            print("-" * 30)
-
-    elif args.stats_command == "habit":
-        habit = next((h for h in habits if h.id == args.habit_id), None)
-        if habit:
-            stats = analytics.analyze_habit(habit)
-            suggestions = analytics.generate_improvement_suggestions(stats)
-
-            display_habit_stats(stats, habit.name)
-
-            if suggestions:
-                print("\nSuggestions for improvement:")
-                for suggestion in suggestions:
-                    print(f"- {suggestion}")
-        else:
-            print("Habit not found")
-    elif args.stats_command == "longest-streaks":
-        longest_streaks = analytics.get_longest_streak_all_habits(habits)
-        print("\nLongest streaks for all habits:")
-        for habit_name, streak in longest_streaks.items():
-            print(f"{habit_name}: {streak} {'days' if any(h.periodicity == 'daily' for h in habits if h.name == habit_name) else 'weeks'}")
-        print("-" * 30)
-
+# Create
 def handle_create_command(args: argparse.Namespace, habit_manager: HabitManager) -> None:
     """Handle habit creation command."""
     try:
@@ -145,6 +130,119 @@ def handle_create_command(args: argparse.Namespace, habit_manager: HabitManager)
     except ValueError as e:
         print(f"Error: {e}")
 
+
+# List
+def handle_list_command(args: argparse.Namespace, habit_manager: HabitManager) -> None:
+    """Handle listing habits with optional filtering and formatting."""
+    if args.periodicity:
+        habits = habit_manager.get_habits_by_periodicity(args.periodicity)
+    else:
+        habits = list(habit_manager.habits.values())
+
+    if not habits:
+        print("No habits found")
+        return
+
+    print("\n📋 Habits List")
+    print("=" * 40)
+    
+    for habit in habits:
+        stats = habit_manager.get_habit_stats(habit.id)
+        
+        print(f"\nHabit: {habit.name}")
+        print(f"ID: {habit.id}")
+        print(f"Periodicity: {habit.periodicity}")
+        print(f"Current streak: {stats['current']} {habit.periodicity}")
+        print(f"Longest streak: {stats['longest']} {habit.periodicity}")
+        print("-" * 30)
+
+# View
+def handle_view_command(args: argparse.Namespace, habit_manager: HabitManager) -> None:
+    """Display essential habit information with focus on recent activity."""
+    details = habit_manager.get_habit_details(args.habit_id)
+    if not details:
+        print("Habit not found")
+        return
+    
+    # Basic Information Section
+    print("\n📋 Habit Details")
+    print("=" * 40)
+    print(f"Name: {details['name']}")
+    print(f"ID: {args.habit_id}")
+    print(f"Periodicity: {details['periodicity']}")
+    print(f"Description: {details['description']}")
+    print(f"Created: {details['created_at'].strftime('%Y-%m-%d')}")
+    stats = habit_manager.get_habit_stats(args.habit_id)
+    print(f"\nCurrent streak: {stats['current']} {details['periodicity']}")
+    
+    # Recent Activity Section
+    print("\n🔄 Recent Activity")
+    print("_" * 20)
+    completions = sorted(details['completions'], reverse=True)
+    recent_completions = completions[:5]  # Show last 5 completions
+    
+    if recent_completions:
+        print("Last completions:")
+        for completion in recent_completions:
+            print(f"✓ {completion.strftime('%Y-%m-%d %H:%M')}")
+        if len(completions) > 5:
+            print(f"... and {len(completions) - 5} more")
+    else:
+        print("No completions recorded yet")
+    
+# Stats
+def handle_stats_command(args: argparse.Namespace, habit_manager: HabitManager) -> None:
+    """Display comprehensive statistical analysis with complete history."""
+
+    if args.stats_command == "longest-streaks":
+        longest_streaks = habit_manager.get_longest_streaks()
+        print("\n🏆 Longest Streaks")
+        print("_" * 20)
+        for habit_name, streak in longest_streaks.items():
+            habit = next((h for h in habit_manager.habits.values() 
+                         if h.name == habit_name), None)
+            period = 'days' if habit and habit.periodicity == 'daily' else 'weeks'
+            print(f"{habit_name}: {streak} {period}")
+        print("=" * 40)
+    
+    elif args.stats_command == "all":
+        all_stats = habit_manager.get_all_habits_stats()
+        print("\n📈 All Habits Analysis")
+        print("\n" * 2)
+        for habit_name, habit_stats in all_stats.items():
+            habit = next((h for h in habit_manager.habits.values() 
+                            if h.name == habit_name), None)
+            if habit:
+                habit_stats['suggestions'] = habit_manager.get_improvement_suggestions(habit_stats)
+                display_stats(habit_name, habit_stats, habit)
+
+    elif args.stats_command == "periodicity":
+        period_stats = habit_manager.get_periodicity_stats(args.period)
+        print(f"\n📈 {args.period.capitalize()} Habits Analysis")
+        print("\n" * 2)
+        for habit_data in period_stats:
+            habit = next((h for h in habit_manager.habits.values() 
+                         if h.name == habit_data['name']), None)
+            if habit:
+                stats = habit_data["stats"]
+                stats['suggestions'] = habit_manager.get_improvement_suggestions(stats)
+                display_stats(habit_data["name"], stats, habit)
+
+    elif args.stats_command == "habit":
+        stats = habit_manager.get_habit_stats(args.habit_id)
+        habit = habit_manager.get_habit_by_id(args.habit_id)
+    
+        if not stats or not habit:
+            print("Habit not found")
+            return
+
+        stats['suggestions'] = habit_manager.get_improvement_suggestions(stats)
+        display_stats(habit.name, stats, habit)
+    else:
+        print("Please specify a stats command. Use --help for options.")
+        return
+    
+
 def main():
     db = Database()
     habit_manager = HabitManager(db)
@@ -155,62 +253,25 @@ def main():
         print("Default habits initialized successfully!")
 
     parser = create_cli(habit_manager)
-
-    # # Check if this is first run (no habits exist)
-    # if not habit_manager.habits:
-    #     print("Initializing default habits...")
-    #     habit_manager = initialize_default_habits(db)
-    #     print("\nDefault habits have been created with 4 weeks of sample data:")
-    #     for habit in habit_manager.habits.values():
-    #         print(f"\nHabit: {habit.name} ({habit.periodicity})")
-    #         print(f"Description: {habit.description}")
-    #         print(f"Completions:")
-    #         for completion in sorted(habit.get_completions()):
-    #             print(f"  - {completion}")
-
     args = parser.parse_args()
 
-    if args.command == "create":
-        handle_create_command(args, habit_manager)
+    # Create command handlers dictionary
+    command_handlers = {
+        "complete": lambda args, hm: print(
+            "Habit completed successfully" 
+            if hm.complete_habit(args.habit_id) 
+            else "Failed to complete habit"
+        ),
+        "create": handle_create_command,
+        "list": handle_list_command,
+        "view": handle_view_command, 
+        "stats": handle_stats_command
+    }
 
-    elif args.command == "complete":
-        if habit_manager.complete_habit(args.habit_id):
-            print("Habit completed successfully")
-        else:
-            print("Failed to complete habit")
-
-    elif args.command == "list":
-        if args.periodicity:
-            habits = habit_manager.get_habits_by_periodicity(args.periodicity)
-        else:
-            habits = list(habit_manager.habits.values())
-
-        for habit in habits:
-            habit_stats = analytics.analyze_habit(habit)
-            print(f"ID: {habit.id}")
-            print(f"Name: {habit.name}")
-            print(f"Periodicity: {habit.periodicity}")
-            print(f"Current streak: {habit_stats['current']}")
-            print(f"Longest streak: {habit_stats['longest']}")
-            print("-" * 30)
-
-    elif args.command == "view":
-        habit = habit_manager.get_habit_by_id(args.habit_id)
-        if habit:
-            print(f"Name: {habit.name}")
-            print(f"Periodicity: {habit.periodicity}")
-            print(f"Description: {habit.description}")
-            print(f"Created at: {habit.created_at}")
-            print("\nCompletions:")
-            for completion in habit.get_completions():
-                print(completion)
-        else:
-            print("Habit not found")
-
-    elif args.command == "stats":
-        habits = list(habit_manager.habits.values())
-        handle_stats_command(args, habits)
-
+    # Get and execute the appropriate handler
+    handler = command_handlers.get(args.command)
+    if handler:
+        handler(args, habit_manager)
 
 if __name__ == "__main__":
     main()

@@ -1,11 +1,10 @@
 from datetime import datetime
-from typing import Dict, List, Optional
-
+from typing import Dict, List, Optional, Any
+from . import analytics
 from .database import Database
 from .habit import Habit
 
 VALID_PERIODICITIES = ["daily", "weekly"]
-
 
 class HabitManager:
     def __init__(self, db: Database):
@@ -80,3 +79,43 @@ class HabitManager:
         return [
             habit for habit in self.habits.values() if habit.periodicity == periodicity
         ]
+
+    def get_habit_stats(self, habit_id: str) -> Optional[Dict[str, Any]]:
+        """Get statistics for a single habit."""
+        habit = self.get_habit_by_id(habit_id)
+        if not habit:
+            return None
+        return analytics.analyze_habit(habit)
+
+    def get_all_habits_stats(self) -> Dict[str, Dict[str, Any]]:
+        """Get statistics for all habits."""
+        return analytics.analyze_all_habits(list(self.habits.values()))
+
+    def get_periodicity_stats(self, periodicity: str) -> List[Dict[str, Any]]:
+        """Get statistics for habits with specified periodicity."""
+        habits = list(self.habits.values())
+        return analytics.get_habits_by_periodicity(habits, periodicity)
+
+    def get_longest_streaks(self) -> Dict[str, int]:
+        """Get longest streaks for all habits."""
+        return analytics.get_longest_streak_all_habits(list(self.habits.values()))
+
+    def get_improvement_suggestions(self, stats: Dict[str, Any]) -> List[str]:
+        """Get improvement suggestions based on habit statistics."""
+        return analytics.generate_improvement_suggestions(stats)
+
+    def get_habit_details(self, habit_id: str) -> Dict[str, Any]:
+        """Get comprehensive habit details including stats."""
+        habit = self.get_habit_by_id(habit_id)
+        if not habit:
+            return None
+            
+        stats = self.get_habit_stats(habit_id)
+        return {
+            "name": habit.name,
+            "periodicity": habit.periodicity,
+            "description": habit.description,
+            "created_at": habit.created_at,
+            "completions": habit.get_completions(),
+            "stats": stats
+        }
