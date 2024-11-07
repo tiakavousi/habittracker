@@ -46,13 +46,14 @@ def create_cli(habit_manager: HabitManager):
 
     # All habits stats
     stats_subparsers.add_parser("all", help="View statistics for all habits")
+    stats_subparsers.add_parser("longest-streaks", help="View longest streaks for all habits")
 
     # Stats by periodicity
     periodicity_parser = stats_subparsers.add_parser(
         "periodicity", help="View statistics by periodicity"
     )
     periodicity_parser.add_argument("period", choices=["daily", "weekly"])
-
+   
     # Single habit stats
     single_parser = stats_subparsers.add_parser(
         "habit", help="View statistics for a single habit"
@@ -113,6 +114,12 @@ def handle_stats_command(args, habits: List):
                     print(f"- {suggestion}")
         else:
             print("Habit not found")
+    elif args.stats_command == "longest-streaks":
+        longest_streaks = analytics.get_longest_streak_all_habits(habits)
+        print("\nLongest streaks for all habits:")
+        for habit_name, streak in longest_streaks.items():
+            print(f"{habit_name}: {streak} {'days' if any(h.periodicity == 'daily' for h in habits if h.name == habit_name) else 'weeks'}")
+        print("-" * 30)
 
 def handle_create_command(args: argparse.Namespace, habit_manager: HabitManager) -> None:
     """Handle habit creation command."""
