@@ -64,8 +64,9 @@ def create_cli(habit_manager: HabitManager):
 def display_stats(habit_name: str, stats: dict, habit: Any) -> None:
     """Standardized display format for habit statistics including complete history."""
     # Performance Metrics Section
-    print(f"\n\n {habit_name}")
-    print("_" * 30)
+    print(f"\nHabit: {habit_name}")
+    print(f"ID: {habit.id}")
+    print("-" * 30)
     print(f"Total completions: {stats['total_completions']}")
     print(f"Completion rate: {stats['completion_rate']:.1f}%")
     
@@ -74,28 +75,10 @@ def display_stats(habit_name: str, stats: dict, habit: Any) -> None:
     print(f"Longest streak: {stats['longest']} {habit.periodicity}")
     print(f"Break count: {stats['break_count']}")
     
-    # Consistency Analysis
-    completion_rate = stats['completion_rate']
-    if completion_rate >= 80:
-        consistency = "Excellent"
-    elif completion_rate >= 60:
-        consistency = "Good"
-    elif completion_rate >= 40:
-        consistency = "Fair"
-    else:
-        consistency = "Needs improvement"
-    print(f"\nConsistency rating: {consistency}")
-    
-    # Improvement Suggestions
-    suggestions = stats.get('suggestions', [])
-    if suggestions:
-        print("\n💡 Suggestions:")
-        for suggestion in suggestions:
-            print(f"• {suggestion}")
 
     # Complete History Section
     print("\n📅 Complete History")
-    print("_" * 30)
+    print("-" * 30)
     completions = sorted(habit.get_completions(), reverse=True)
     if completions:
         print(f"All completions ({len(completions)} total):")
@@ -103,7 +86,7 @@ def display_stats(habit_name: str, stats: dict, habit: Any) -> None:
             print(f"{idx}. {completion.strftime('%Y-%m-%d %H:%M')}")
     else:
         print("No completions recorded yet")
-    print("=" * 40)
+    print("=" * 50)
 
 # Create
 def handle_create_command(args: argparse.Namespace, habit_manager: HabitManager) -> None:
@@ -144,7 +127,7 @@ def handle_list_command(args: argparse.Namespace, habit_manager: HabitManager) -
         return
 
     print("\n📋 Habits List")
-    print("=" * 40)
+    print("=" * 50)
     
     for habit in habits:
         stats = habit_manager.get_habit_stats(habit.id)
@@ -166,7 +149,7 @@ def handle_view_command(args: argparse.Namespace, habit_manager: HabitManager) -
     
     # Basic Information Section
     print("\n📋 Habit Details")
-    print("=" * 40)
+    print("=" * 50)
     print(f"Name: {details['name']}")
     print(f"ID: {args.habit_id}")
     print(f"Periodicity: {details['periodicity']}")
@@ -203,7 +186,7 @@ def handle_stats_command(args: argparse.Namespace, habit_manager: HabitManager) 
                          if h.name == habit_name), None)
             period = 'days' if habit and habit.periodicity == 'daily' else 'weeks'
             print(f"{habit_name}: {streak} {period}")
-        print("=" * 40)
+        print("=" * 50)
     
     elif args.stats_command == "all":
         all_stats = habit_manager.get_all_habits_stats()
@@ -213,19 +196,16 @@ def handle_stats_command(args: argparse.Namespace, habit_manager: HabitManager) 
             habit = next((h for h in habit_manager.habits.values() 
                             if h.name == habit_name), None)
             if habit:
-                habit_stats['suggestions'] = habit_manager.get_improvement_suggestions(habit_stats)
                 display_stats(habit_name, habit_stats, habit)
 
     elif args.stats_command == "periodicity":
         period_stats = habit_manager.get_periodicity_stats(args.period)
         print(f"\n📈 {args.period.capitalize()} Habits Analysis")
-        print("\n" * 2)
         for habit_data in period_stats:
             habit = next((h for h in habit_manager.habits.values() 
                          if h.name == habit_data['name']), None)
             if habit:
                 stats = habit_data["stats"]
-                stats['suggestions'] = habit_manager.get_improvement_suggestions(stats)
                 display_stats(habit_data["name"], stats, habit)
 
     elif args.stats_command == "habit":
@@ -236,7 +216,6 @@ def handle_stats_command(args: argparse.Namespace, habit_manager: HabitManager) 
             print("Habit not found")
             return
 
-        stats['suggestions'] = habit_manager.get_improvement_suggestions(stats)
         display_stats(habit.name, stats, habit)
     else:
         print("Please specify a stats command. Use --help for options.")

@@ -179,34 +179,3 @@ def analyze_all_habits(habits: List[Any]) -> Dict[str, Stats]:
 def get_habits_by_periodicity(habits: List[Any], periodicity: str) -> List[Dict]:
     """Get analysis for habits with specified periodicity."""
     return analyze_habits_by_predicate(habits, lambda h: h.periodicity == periodicity)
-
-
-def generate_improvement_suggestions(stats: Stats) -> List[str]:
-    period_text = "weeks" if stats.get("periodicity") == "weekly" else "days"
-    suggestion_rules = [
-        # Rule format: (condition_fn, message_fn)
-        (
-            lambda s: s["completion_rate"] < 30,
-            lambda _: "Consider making this habit easier or breaking it into smaller steps",
-        ),
-        (
-            lambda s: s["completion_rate"] < 70,
-            lambda _: "You're making progress! Try setting specific times for this habit",
-        ),
-        (
-            lambda s: s["current"] < s["longest"] / 2,
-            lambda s: f"You've had a longer streak ({s['longest']} {period_text})! Try to beat your record",
-        ),
-
-        (
-            lambda s: s["break_count"] > s["total_completions"] / 3,
-            lambda _: "Consider setting reminders to maintain consistency",
-        ),
-    ]
-
-    return pipe(
-        suggestion_rules,
-        lambda rules: filter(lambda rule: rule[0](stats), rules),
-        lambda rules: map(lambda rule: rule[1](stats), rules),
-        list,
-    )

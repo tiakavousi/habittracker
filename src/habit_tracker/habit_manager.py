@@ -100,10 +100,6 @@ class HabitManager:
         """Get longest streaks for all habits."""
         return analytics.get_longest_streak_all_habits(list(self.habits.values()))
 
-    def get_improvement_suggestions(self, stats: Dict[str, Any]) -> List[str]:
-        """Get improvement suggestions based on habit statistics."""
-        return analytics.generate_improvement_suggestions(stats)
-
     def get_habit_details(self, habit_id: str) -> Dict[str, Any]:
         """Get comprehensive habit details including stats."""
         habit = self.get_habit_by_id(habit_id)
