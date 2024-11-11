@@ -6,6 +6,10 @@ VALID_PERIODICITIES = ["daily", "weekly"]
 
 
 class Habit:
+    """
+    Represents a trackable habit with completion history and metadata.
+    Supports daily or weekly periodicities and maintains completion timestamps.
+    """
     def __init__(
         self,
         name: str,
@@ -13,6 +17,10 @@ class Habit:
         description: str = "",
         created_at: Optional[datetime] = None
     ):
+        """
+        Initialize a new habit with unique ID and given attributes.
+        Raises ValueError if periodicity is invalid.
+        """
         if periodicity not in VALID_PERIODICITIES:
             raise ValueError(
                 f"Invalid periodicity. Must be one of: {', '.join(VALID_PERIODICITIES)}"
@@ -26,17 +34,26 @@ class Habit:
         self._completions: List[datetime] = []
 
     def add_completion(self, completion_time: datetime = None) -> None:
-        """Add a completion timestamp for the habit."""
+        """
+        Records a completion of the habit at specified time or current time.
+        Adds completion timestamp to the habit's history.
+        """
         if completion_time is None:
             completion_time = datetime.now()
         self._completions.append(completion_time)
 
     def get_completions(self) -> List[datetime]:
-        """Get all completion timestamps for the habit."""
+        """
+        Returns a sorted list of all completion timestamps.
+        Timestamps are ordered from earliest to latest.
+        """
         return sorted(self._completions)
 
     def to_dict(self) -> dict:
-        """Convert habit to dictionary for storage."""
+        """
+        Returns a dictionary representation of the habit for database storage.
+        Includes id, name, periodicity, description, and creation time.
+        """
         return {
             "id": self.id,
             "name": self.name,

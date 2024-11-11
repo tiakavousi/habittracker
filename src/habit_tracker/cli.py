@@ -6,6 +6,11 @@ from .habit_manager import HabitManager
 from .data_loader import initialize_default_habits
 
 def create_cli(habit_manager: HabitManager):
+    """
+    Create and configure the command-line interface for the habit tracker.
+    Returns an ArgumentParser with all subcommands and arguments configured.
+    """
+
     parser = argparse.ArgumentParser(description="Habit Tracker Application")
     subparsers = parser.add_subparsers(dest="command", help="Commands")
 
@@ -41,17 +46,17 @@ def create_cli(habit_manager: HabitManager):
     stats_parser = subparsers.add_parser("stats", help="View habit statistics")
     stats_subparsers = stats_parser.add_subparsers(dest="stats_command")
 
-    # All habits stats
+    # Subcommands for stats to view all habits or specific habit statistics
     stats_subparsers.add_parser("all", help="View statistics for all habits")
     stats_subparsers.add_parser("longest-streaks", help="View longest streaks for all habits")
 
-    # Stats by periodicity
+    # Subcommand to view statistics by periodicity
     periodicity_parser = stats_subparsers.add_parser(
         "periodicity", help="View statistics by periodicity"
     )
     periodicity_parser.add_argument("period", choices=["daily", "weekly"])
    
-    # Single habit stats
+    # Subcommand for viewing stats of a single habit
     single_parser = stats_subparsers.add_parser(
         "habit", help="View statistics for a single habit"
     )
@@ -62,7 +67,10 @@ def create_cli(habit_manager: HabitManager):
 
 # Display stats Helper function
 def display_stats(habit_name: str, stats: dict, habit: Any) -> None:
-    """Standardized display format for habit statistics including complete history."""
+    """
+    Display formatted statistics for a given habit including completion history and streaks.
+    Takes habit name, stats dictionary, and habit object as input.
+    """
     # Performance Metrics Section
     print(f"\nHabit: {habit_name}")
     print(f"ID: {habit.id}")
@@ -90,7 +98,10 @@ def display_stats(habit_name: str, stats: dict, habit: Any) -> None:
 
 # Create
 def handle_create_command(args: argparse.Namespace, habit_manager: HabitManager) -> None:
-    """Handle habit creation command."""
+    """
+    Process the create habit command with provided arguments.
+    Creates a new habit with specified name, periodicity, and optional description.
+    """
     try:
         created_at = None
         if args.created_at:
@@ -116,7 +127,10 @@ def handle_create_command(args: argparse.Namespace, habit_manager: HabitManager)
 
 # List
 def handle_list_command(args: argparse.Namespace, habit_manager: HabitManager) -> None:
-    """Handle listing habits with optional filtering and formatting."""
+    """
+    Display a list of all habits with optional filtering by periodicity.
+    Shows basic information including current and longest streaks.
+    """
     if args.periodicity:
         habits = habit_manager.get_habits_by_periodicity(args.periodicity)
     else:
@@ -141,7 +155,10 @@ def handle_list_command(args: argparse.Namespace, habit_manager: HabitManager) -
 
 # View
 def handle_view_command(args: argparse.Namespace, habit_manager: HabitManager) -> None:
-    """Display essential habit information with focus on recent activity."""
+    """
+    Show detailed information for a specific habit including recent activity.
+    Displays habit details, current streak, and last 5 completions.
+    """
     details = habit_manager.get_habit_details(args.habit_id)
     if not details:
         print("Habit not found")
@@ -175,8 +192,10 @@ def handle_view_command(args: argparse.Namespace, habit_manager: HabitManager) -
     
 # Stats
 def handle_stats_command(args: argparse.Namespace, habit_manager: HabitManager) -> None:
-    """Display comprehensive statistical analysis with complete history."""
-
+    """
+    Process various statistics commands including all habits, longest streaks, and periodicity analysis.
+    Supports viewing stats for individual habits or grouped by different criteria.
+    """
     if args.stats_command == "longest-streaks":
         longest_streaks = habit_manager.get_longest_streaks()
         print("\n🏆 Longest Streaks")
@@ -223,6 +242,10 @@ def handle_stats_command(args: argparse.Namespace, habit_manager: HabitManager) 
     
 
 def main():
+    """
+    Initialize the habit tracker application and handle command-line arguments.
+    Sets up the database, habit manager, and processes user commands.
+    """
     db = Database()
     habit_manager = HabitManager(db)
     # Initialize default habits if the database is empty

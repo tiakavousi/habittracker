@@ -7,66 +7,37 @@ from random import random, randint
 from typing import Dict, Any
 
 class HabitDataLoader:
+    """
+    Handles loading and initialization of habits from configuration files.
+    Provides functionality to create habits with simulated historical data.
+    """
     def __init__(self, habit_manager, config_path: str = None):
+        """
+        Initialize the data loader with a habit manager and optional config path.
+        If no config path is provided, uses the default config location.
+        """
         self.habit_manager = habit_manager
         self.config_path = config_path or Path(__file__).parent.parent.parent / "config" / "default_habits.yaml"
 
     def load_config(self) -> Dict[str, Any]:
-        """Load habit configuration from YAML file."""
+        """
+        Load and parse the YAML configuration file.
+        Returns a dictionary containing habit configurations.
+        """
         with open(self.config_path, 'r') as file:
             return yaml.safe_load(file)
 
     def initialize_habits(self, days_of_history: int = 28) -> None:
-        """Initialize habits with completion history."""
+        """
+        Create habits from config and generate completion history for specified days.
+        Default history period is 28 days.
+        """
         config = self.load_config()
         end_date = datetime.now()
         start_date = end_date - timedelta(days=days_of_history)
 
         for habit_config in config['habits']:
             self._create_and_complete_habit(habit_config, start_date, end_date)
-
-    # def _create_and_complete_habit(
-    #     self,
-    #     habit_config: Dict[str, Any],
-    #     start_date: datetime,
-    #     end_date: datetime
-    # ) -> None:
-    #     """Create a habit and add its completion history."""
-    #     # Create the habit with the start_date
-    #     habit = self.habit_manager.create_habit(
-    #         name=habit_config['name'],
-    #         periodicity=habit_config['periodicity'],
-    #         description=habit_config['description'],
-    #         created_at=start_date  # Set creation date to start_date
-    #     )
-
-    #     if not habit:
-    #         print(f"Failed to create habit: {habit_config['name']}")
-    #         return
-
-    #     # Add completion history
-    #     current_date = start_date
-    #     days_completed = 0
-    #     total_days = (end_date - start_date).days + 1
-
-    #     while current_date <= end_date:
-    #         completed = self._handle_completion(
-    #             habit,
-    #             current_date,
-    #             habit_config['completion_rate'],
-    #             habit_config['completion_time_range'],
-    #             habit_config['periodicity']
-    #         )
-    #         if completed:
-    #             days_completed += 1
-    #         current_date += timedelta(days=1)
-
-    #     # Verify completion rate
-    #     actual_rate = (days_completed / total_days) * 100
-    #     target_rate = habit_config['completion_rate'] * 100
-    #     print(f"Habit: {habit.name}")
-    #     print(f"Target completion rate: {target_rate:.1f}%")
-    #     print(f"Actual completion rate: {actual_rate:.1f}%")
 
     def _handle_completion(
         self,
@@ -76,7 +47,10 @@ class HabitDataLoader:
         time_range: Dict[str, int],
         periodicity: str
     ) -> None:
-        """Handle habit completion based on periodicity and randomization."""
+        """
+        Process a single habit completion based on probability and time constraints.
+        Returns True if completion was successful, False otherwise.
+        """
         # For weekly habits, only attempt completion on Mondays
         if periodicity == "weekly" and current_date.weekday() != 0:
             return False
@@ -96,7 +70,10 @@ class HabitDataLoader:
         start_date: datetime,
         end_date: datetime
     ) -> None:
-        """Create a habit and add its completion history."""
+        """
+        Create a single habit and generate its completion history between dates.
+        Prints completion rate statistics after generation.
+        """
         habit = self.habit_manager.create_habit(
             name=habit_config['name'],
             periodicity=habit_config['periodicity'],
@@ -130,6 +107,9 @@ class HabitDataLoader:
         print(f"Actual completion rate: {actual_rate:.1f}%")
 
 def initialize_default_habits(habit_manager, config_path: str = None) -> None:
-    """Initialize default habits with 4 weeks of sample completion data."""
+    """
+    Create default habits with 4 weeks of generated completion data.
+    Uses provided config path or falls back to default location.
+    """
     loader = HabitDataLoader(habit_manager, config_path)
     loader.initialize_habits()
